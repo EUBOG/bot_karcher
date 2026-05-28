@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  bot:
+    build: .  # Строит образ из Dockerfile в текущей директории
+    container_name: my_karcher_bot_container
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN} # Загружает переменную из .env файла (см. ниже)
+      - DATABASE_URL=sqlite:///bot_database.db # Указываем путь к БД внутри контейнера
+    volumes:
+      # Опционально: монтируем том для сохранения базы данных между перезапусками контейнера
+      # - ./data:/app/data # Создаст папку data на хосте и смонтирует в /app/data внутри контейнера
+    env_file:
+      - .env # Загружает переменные из файла .env (храните BOT_TOKEN там)
+    restart: unless-stopped # Перезапускать контейнер, если он остановился (кроме ручной остановки)
