@@ -1,8 +1,9 @@
 from aiogram import Router, F
 from aiogram.types import Message
-from keyboards.default_keyboards import get_contact_scenario_keyboard, get_file_upload_keyboard, get_back_to_menu_keyboard
+from keyboards.default_keyboards import get_contact_scenario_keyboard, get_file_upload_keyboard, get_back_to_menu_keyboard, get_start_over_or_exit_keyboard, get_main_menu_keyboard
 from database import get_db, update_client_activity, create_request
 from contextlib import contextmanager
+from database import Client
 
 router = Router()
 
@@ -77,5 +78,45 @@ async def handle_document(message: Message):
             update_client_activity(db, client.id, "Оставил заявку")
 
     await message.answer("Файл получен. Спасибо, ваш запрос отправлен. Я постараюсь оперативно ответить в этом чате.", reply_markup=get_back_to_menu_keyboard())
+
+
+
+# --- НОВЫЙ ОБРАБОТЧИК: Начать с начала (как /start) ---
+@router.message(F.text == "Начать с начала")
+async def start_over(message: Message):
+    """
+    Повторяет логику команды /start.
+    """
+    # Проверяем, есть ли у пользователя подтвержденный контакт в базе
+    with next(get_db()) as db:
+        client = db.query(Client).filter(Client.telegram_user_id == message.from_user.id).first()
+
+    if client and client.phone_number: # Если клиент найден и у него есть подтверждённый номер
+        # Пропускаем просьбу подтвердить номер, сразу показываем главное меню
+        await message.answer("Выберите, с чем вам помочь.", reply_markup=get_main_menu_keyboard())
+        # Обновляем статус, если нужно (например, сбросить до "Ничего не выбрал")
+        # update_client_activity(db, client.id, "Ничего не выбрал")
+    else:
+        # Если контакт не найден или не подтверждён, повторяем начальный сценарий
+        await message.answer("Здравствуйте, это Раиль, ваш поставщик по технике Керхер и другому моющему оборудованию. Через этого бота вы можете быстро связаться со мной, запросить коммерческое предложение, оставить запрос на демонстрацию, подобрать оборудование и заказать расходники.")
+        await message.answer("Для продолжения, пожалуйста, подтвердите ваш номер телефона кнопкой ниже.", reply_markup=get_start_keyboard())
+
+# --- НОВЫЙ ОБРАБОТЧИК: Завершить работу ---
+@router.message(F.text == "Завершить работу с ботом")
+async def end_conversation(message: Message):
+    """
+    Отправляет сообщение и завершает текущую сессию (до следующего /start или сообщения).
+    """
+    await message.answer("Спасибо за тестирование.")
+
+# --- Обработка неизвестных команд/кнопок ---
+@router.message(F.text)
+async def unknown_command_handler(message: Message):
+    """
+    Обработчик для любых текстовых сообщений, не подходящих под другие фильтры.
+    """
+    await message.answer("Алгоритм ещё дорабатывается.")
+    await message.answer("Что вы хотите сделать?", reply_markup=get_start_over_or_exit_keyboard())
+
 
 # Добавьте остальные обработчики меню по аналогии...

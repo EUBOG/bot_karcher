@@ -39,3 +39,11 @@ def get_file_upload_keyboard():
         [get_back_to_menu_keyboard().keyboard[0][0]]
     ]
     return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
+
+def get_start_over_or_exit_keyboard():
+    """Клавиатура с кнопками 'Начать с начала' и 'Завершить работу с ботом'."""
+    keyboard = [
+        [KeyboardButton(text="Начать с начала")],
+        [KeyboardButton(text="Завершить работу с ботом")]
+    ]
+    return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
